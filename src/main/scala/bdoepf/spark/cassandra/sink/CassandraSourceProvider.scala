@@ -1,6 +1,7 @@
-package de.bdoepf.spark.cassandra.sink
+package bdoepf.spark.cassandra.sink
 
-import com.datastax.spark.connector.cql.CassandraConnector
+import com.datastax.spark.connector.cql.{CassandraConnector, Schema}
+import com.datastax.spark.connector.{ColumnRef, ColumnSelector, SomeColumns}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.sources.DataSourceRegister
 import org.apache.spark.sql.sources.v2.writer.streaming.StreamWriter
@@ -15,6 +16,8 @@ class CassandraSourceProvider extends DataSourceV2 with StreamWriteSupport with 
   final val TableNameConfig = "table"
   final val KeyspaceNameConfig = "keyspace"
 
+  override def shortName(): String = "cassandra-streaming"
+
   override def createStreamWriter(queryId: String,
                                   schema: StructType,
                                   mode: OutputMode,
@@ -28,27 +31,34 @@ class CassandraSourceProvider extends DataSourceV2 with StreamWriteSupport with 
     }
 
     val parameters = options.asMap().asScala
-    val keyspace = getRequiredParameter(KeyspaceNameConfig, parameters)
-    val table = getRequiredParameter(TableNameConfig, parameters)
+    val keyspaceName = getRequiredParameter(KeyspaceNameConfig, parameters)
+    val tableName = getRequiredParameter(TableNameConfig, parameters)
 
+    val cassandraConnector = CassandraConnector(session.get.sharedState.sparkContext.getConf)
 
-    val destTable = try {
-      // TODO check if table exists
-//      session.get.sharedState.externalCatalog.getTable(
-//        localHiveOptions.dbName, localHiveOptions.tableName)
+    val tableDef = try {
+      Schema.tableFromCassandra(cassandraConnector, keyspaceName, tableName)
     } catch {
       case e: Exception => throw new IllegalStateException("Cannot find destination table in " +
         "cassandra, please create table at first", e)
     }
-    val cassandraConnector = CassandraConnector(session.get.sharedState.sparkContext.getConf)
 
-    // TODO check schema
-//    if (schema.map(_.name).toSet != destSchema.map(_.name).toSet) {
-//      throw new IllegalStateException(s"Schema $schema transformed from input source is different" +
-//        s" from schema $destSchema for the destination table")
-//    }
+    // Columns that cannot actually be written to because they represent virtual endpoints
+    val InternalColumns = Set("solr_query")
 
-    new CassandraStreamWriter(cassandraConnector, keyspace, table, schema)
+    val rowColumnRefs = schema.fields.map(_.name: ColumnRef)
+    val columns: ColumnSelector = SomeColumns(rowColumnRefs: _*)
+
+    val selectedColumns: IndexedSeq[ColumnRef] = try {
+      columns
+        .selectFrom(tableDef)
+        .filter(col => !InternalColumns.contains(col.columnName))
+    } catch {
+      case e: Exception => throw new IllegalStateException(s"Not all columns from input source schema $schema could " +
+        s"be found in cassandra table definition.")
+    }
+
+    new CassandraStreamWriter(cassandraConnector, selectedColumns, tableDef)
   }
 
   private def getRequiredParameter(parameterKey: String, parameters: mutable.Map[String, String]) = {
@@ -57,5 +67,4 @@ class CassandraSourceProvider extends DataSourceV2 with StreamWriteSupport with 
     ))
   }
 
-  override def shortName(): String = "cassandra-streaming"
 }

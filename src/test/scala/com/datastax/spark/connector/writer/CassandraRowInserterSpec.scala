@@ -1,13 +1,14 @@
 package com.datastax.spark.connector.writer
 
-import com.datastax.spark.connector.cql.CassandraConnector
+import com.datastax.spark.connector.ColumnRef
+import com.datastax.spark.connector.cql.{CassandraConnector, Schema}
 import org.apache.spark.sql.{Row, SparkSession}
 import org.scalatest.{FlatSpec, Matchers}
 
 final case class MyItem(id: Int, descr: String)
 
 class CassandraDataWriterSpec extends FlatSpec with Matchers {
-  val spark = SparkSession
+  val spark: SparkSession = SparkSession
     .builder()
     .master("local[*]")
     .config("spark.cassandra.connection.host", "localhost")
@@ -19,13 +20,15 @@ class CassandraDataWriterSpec extends FlatSpec with Matchers {
   "CassandraRowInserter" should "insert spark Rows into cassandra table" in {
     import org.apache.spark.sql.Encoders
     val mySchema = Encoders.product[MyItem].schema
-    // TODO create schema from case class
+
     val ds = spark.createDataset(List(MyItem(5, "My Item with id 5")))
     val row = ds.toDF().collect().head
 
     val connector = CassandraConnector(spark.sparkContext.getConf)
-    val inserter = new CassandraDataWriter(connector, "my_keyspace", "my_table", mySchema)
+    val rowColumnRefs = mySchema.fields.map(_.name: ColumnRef).toIndexedSeq
+    val tableDef = Schema.tableFromCassandra(connector, "my_keyspace", "my_table")
 
+    val inserter = new CassandraDataWriter(connector, rowColumnRefs,tableDef)
     inserter.write(row)
   }
 
@@ -34,8 +37,6 @@ class CassandraDataWriterSpec extends FlatSpec with Matchers {
 }
 
 object ManualTest {
-
-
 
   def main(args: Array[String]): Unit = {
     val spark = SparkSession
