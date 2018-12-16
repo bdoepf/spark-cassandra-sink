@@ -8,11 +8,15 @@ import org.apache.spark.sql.sources.v2.writer.streaming.StreamWriter
 import org.apache.spark.sql.sources.v2.{DataSourceOptions, DataSourceV2, StreamWriteSupport}
 import org.apache.spark.sql.streaming.OutputMode
 import org.apache.spark.sql.types.StructType
+import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 class CassandraSourceProvider extends DataSourceV2 with StreamWriteSupport with DataSourceRegister {
+  private val log = LoggerFactory.getLogger(this.getClass.getName)
+  log.info(s"Initializing ${this.getClass.getSimpleName}")
+
   final val TableNameConfig = "table"
   final val KeyspaceNameConfig = "keyspace"
 
@@ -54,7 +58,7 @@ class CassandraSourceProvider extends DataSourceV2 with StreamWriteSupport with 
         .selectFrom(tableDef)
         .filter(col => !InternalColumns.contains(col.columnName))
     } catch {
-      case e: Exception => throw new IllegalStateException(s"Not all columns from input source schema $schema could " +
+      case _: Exception => throw new IllegalStateException(s"Not all columns from input source schema $schema could " +
         s"be found in cassandra table definition.")
     }
 

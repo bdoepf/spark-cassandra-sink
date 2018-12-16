@@ -4,9 +4,21 @@ version := "0.1"
 
 scalaVersion := "2.11.12"
 
-libraryDependencies += "com.datastax.spark" %% "spark-cassandra-connector" % "2.3.2"
-libraryDependencies += "org.apache.spark" %% "spark-core" % "2.3.2" % "provided"
-libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.3.2" % "provided"
+val sparkVersion = "2.3.2"
+libraryDependencies += "com.datastax.spark" %% "spark-cassandra-connector" % sparkVersion exclude("io.netty", "netty-all")
+libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided"
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.5"
+libraryDependencies += "com.datastax.spark"  %% "spark-cassandra-connector-embedded" % sparkVersion % "test" excludeAll(
+  ExclusionRule("org.slf4j","log4j-over-slf4j"),
+  ExclusionRule("org.slf4j","slf4j-log4j12")
+)
+libraryDependencies += "org.apache.cassandra" % "cassandra-all" % "3.2" % "test" excludeAll(
+  ExclusionRule("org.slf4j","log4j-over-slf4j"),
+  ExclusionRule("org.slf4j","slf4j-log4j12"),
+  ExclusionRule("ch.qos.logback", "logback-classic")
+)
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test"
-libraryDependencies += "io.netty" % "netty-all" % "4.1.17.Final"
+
+//Forking is required for the Embedded Cassandra
+fork in Test := true

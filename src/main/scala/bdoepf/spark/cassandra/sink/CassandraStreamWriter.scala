@@ -6,11 +6,15 @@ import com.datastax.spark.connector.writer.CassandraDataWriter
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.sources.v2.writer.streaming.StreamWriter
 import org.apache.spark.sql.sources.v2.writer.{DataWriter, DataWriterFactory, WriterCommitMessage}
+import org.slf4j.LoggerFactory
 
 
 class CassandraStreamWriter(connector: CassandraConnector,
                             columns: IndexedSeq[ColumnRef],
                             tableDef: TableDef) extends StreamWriter {
+  private val log = LoggerFactory.getLogger(this.getClass.getName)
+  log.info(s"Initializing ${this.getClass.getSimpleName}")
+
   override def commit(epochId: Long, messages: Array[WriterCommitMessage]): Unit = {
   }
 

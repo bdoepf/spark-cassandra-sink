@@ -7,6 +7,7 @@ import com.datastax.spark.connector.cql._
 import com.datastax.spark.connector.{CassandraRow, ColumnRef, SomeColumns}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.sources.v2.writer.{DataWriter, WriterCommitMessage}
+import org.slf4j.{Logger, LoggerFactory}
 
 case object CassandraStreamCommitMessage extends WriterCommitMessage
 
@@ -15,6 +16,8 @@ class CassandraDataWriter(connector: CassandraConnector,
                           columns: IndexedSeq[ColumnRef],
                           tableDef: TableDef)
   extends DataWriter[Row] {
+  private val log = LoggerFactory.getLogger(this.getClass.getName)
+  log.info(s"Initializing ${this.getClass.getSimpleName}")
 
   private val keyspaceName: String = tableDef.keyspaceName
   private val tableName: String = tableDef.tableName
@@ -34,10 +37,10 @@ class CassandraDataWriter(connector: CassandraConnector,
   }
 
   override def write(record: Row): Unit = {
+    log.info(s"Writing row $record")
     connector.withSessionDo { session =>
       val protocolVersion = session.getCluster.getConfiguration.getProtocolOptions.getProtocolVersion
       val stmt = prepareStatement(insertTemplate, session, isIdempotent).setConsistencyLevel(consistencyLevel)
-
 
       val boundStmtBuilder = new BoundStatementBuilder(
         rowWriter,
