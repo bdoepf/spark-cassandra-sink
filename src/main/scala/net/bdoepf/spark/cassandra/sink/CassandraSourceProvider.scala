@@ -1,4 +1,4 @@
-package bdoepf.spark.cassandra.sink
+package net.bdoepf.spark.cassandra.sink
 
 import com.datastax.spark.connector.cql.{CassandraConnector, Schema}
 import com.datastax.spark.connector.{ColumnRef, ColumnSelector, SomeColumns}

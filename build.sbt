@@ -1,10 +1,13 @@
 name := "spark-cassandra-sink"
-
-version := "0.1"
+organization := "net.bdoepf"
 
 scalaVersion := "2.11.12"
 
 val sparkVersion = "2.3.2"
+
+// Pinning the artifact's version to spark's version
+version := sparkVersion
+
 libraryDependencies += "com.datastax.spark" %% "spark-cassandra-connector" % sparkVersion exclude("io.netty", "netty-all")
 libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion % "provided"
 libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided"
