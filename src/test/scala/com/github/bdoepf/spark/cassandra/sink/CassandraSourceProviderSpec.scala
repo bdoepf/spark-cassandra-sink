@@ -1,4 +1,4 @@
-package net.bdoepf.spark.cassandra.sink
+package com.github.bdoepf.spark.cassandra.sink
 
 import java.nio.file.{Files, Path}
 import java.util.UUID

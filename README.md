@@ -9,13 +9,13 @@ Setup
 
 Add the library in the `build.sbt`:
 ```scala
-libraryDependencies += "net.bdoepf" %% "spark-cassandra-sink" % "2.4.0"
+libraryDependencies += "com.github.bdoepf" %% "spark-cassandra-sink" % "2.4.0"
 ```
 The version should be the same like the spark version used.
 
 Configuration
 -------------
-Configure Spark to be able to connect to the cassandra.
+Configure Spark to be able to connect to cassandra.
 ```
 spark.cassandra.connection.host=localhost
 spark.cassandra.connection.port=9092
@@ -92,8 +92,6 @@ val query = transformed
 query.awaitTermination()
 ```
 
-#### Prerequirements
-
 The example above requires a running cassandra on localhost.
 Start cassandra via docker
 ```bash
@@ -119,13 +117,12 @@ docker exec cassandra cqlsh --file /tmp/create.cql
 ```
 
 #### Check if it works
-
 1. Start the netcat server
     ```
     nc -lk 9999
     ```
 2. Start the spark job from above
-3. Write lines in the following schema in the netcat terminal
+3. Type lines of the following format into the nc terminal
     ```
     1,hello
     2,world

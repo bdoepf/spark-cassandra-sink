@@ -1,5 +1,5 @@
 name := "spark-cassandra-sink"
-organization := "net.bdoepf"
+organization := "com.github.bdoepf"
 
 scalaVersion := "2.11.12"
 

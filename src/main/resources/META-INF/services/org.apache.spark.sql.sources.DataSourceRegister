@@ -1,1 +1,1 @@
-net.bdoepf.spark.cassandra.sink.CassandraSourceProvider
+com.github.bdoepf.spark.cassandra.sink.CassandraSourceProvider
