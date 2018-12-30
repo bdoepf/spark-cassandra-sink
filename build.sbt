@@ -3,7 +3,7 @@ organization := "com.github.bdoepf"
 
 scalaVersion := "2.11.12"
 
-val sparkVersion = "2.3.2"
+val sparkVersion = "2.3.0"
 
 // Pinning the artifact's version to spark's version
 version := sparkVersion
