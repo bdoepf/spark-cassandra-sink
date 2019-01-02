@@ -15,7 +15,7 @@ import scala.collection.mutable
 
 class CassandraSourceProvider extends DataSourceV2 with StreamWriteSupport with DataSourceRegister {
   private val log = LoggerFactory.getLogger(this.getClass.getName)
-  log.info(s"Initializing ${this.getClass.getSimpleName}")
+  log.debug(s"Initializing ${this.getClass.getSimpleName}")
 
   final val TableNameConfig = "table"
   final val KeyspaceNameConfig = "keyspace"
@@ -31,7 +31,7 @@ class CassandraSourceProvider extends DataSourceV2 with StreamWriteSupport with 
     require(session.isDefined)
 
     if (mode != OutputMode.Append()) {
-      throw new IllegalStateException("Hive Streaming only supports output with Append mode")
+      throw new IllegalStateException("Cassandra Streaming only supports output with Append mode")
     }
 
     val parameters = options.asMap().asScala
@@ -62,7 +62,7 @@ class CassandraSourceProvider extends DataSourceV2 with StreamWriteSupport with 
         s"be found in cassandra table definition.")
     }
 
-    new CassandraStreamWriter(cassandraConnector, selectedColumns, tableDef)
+    new CassandraStreamWriter(cassandraConnector, selectedColumns, tableDef, schema)
   }
 
   private def getRequiredParameter(parameterKey: String, parameters: mutable.Map[String, String]) = {

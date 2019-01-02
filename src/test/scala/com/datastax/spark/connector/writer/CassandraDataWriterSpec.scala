@@ -3,7 +3,7 @@ package com.datastax.spark.connector.writer
 import com.datastax.spark.connector.cql.{CassandraConnector, Schema}
 import com.datastax.spark.connector.embedded.{EmbeddedCassandra, SparkTemplate, YamlTransformations}
 import com.datastax.spark.connector.{ColumnRef, _}
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{Row, SparkSession}
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
 final case class TestItem(id: Int, descr: String)
@@ -26,8 +26,6 @@ class CassandraDataWriterSpec extends FlatSpec with Matchers with EmbeddedCassan
 
   lazy val spark: SparkSession = sparkSession
 
-  import spark.implicits._
-
   val ksName = "ks"
   val tableName = "test"
 
@@ -48,60 +46,23 @@ class CassandraDataWriterSpec extends FlatSpec with Matchers with EmbeddedCassan
 
   classOf[CassandraDataWriter].getSimpleName should "insert spark Rows into cassandra table" in {
     import org.apache.spark.sql.Encoders
-    val mySchema = Encoders.product[TestItem].schema
+    val encoder = Encoders.product[TestItem]
+    val mySchema = encoder.schema
 
-    val testData = List(TestItem(5, "My Item with id 5"))
-    val ds = spark.createDataset(testData)
-    val row = ds.toDF().collect().head
+    import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
+    val personExprEncoder = encoder.asInstanceOf[ExpressionEncoder[TestItem]]
+
+    val testItem = TestItem(5, "My Item with id 5")
+    val testRow = personExprEncoder.toRow(testItem)
 
     val connector = CassandraConnector(spark.sparkContext.getConf)
     val rowColumnRefs = mySchema.fields.map(_.name: ColumnRef).toIndexedSeq
     val tableDef = Schema.tableFromCassandra(connector, ksName, tableName)
 
-    val inserter = new CassandraDataWriter(connector, rowColumnRefs, tableDef)
-    inserter.write(row)
+    val inserter = new CassandraDataWriter(connector, rowColumnRefs, tableDef, mySchema)
+    inserter.write(testRow)
 
     val results = sc.cassandraTable[TestItem](ksName, tableName).collect()
-    results should contain theSameElementsAs testData
+    results should contain theSameElementsAs List(testItem)
   }
 }
-
-//
-//object ManualTest {
-//
-//  def main(args: Array[String]): Unit = {
-//    val spark = SparkSession
-//      .builder()
-//      .master("local[*]")
-//      .config("spark.cassandra.connection.host", "localhost")
-//      .config("spark.cassandra.connection.port", 9042)
-//      .getOrCreate()
-//    import spark.implicits._
-//
-//    // nc -lk 9999
-//    val host = "localhost"
-//    val port = "9999"
-//    val socket = spark.readStream
-//      .format("socket")
-//      .options(Map("host" -> host, "port" -> port))
-//      .load()
-//      .as[String]
-//
-//    val query = socket.map { s =>
-//      val records = s.split(",")
-//      assert(records.length >= 2)
-//      (records(0).toInt, records(1))
-//    }
-//      .selectExpr("_1 as id", "_2 as descr")
-//      .writeStream
-//      //.format("de.bdoepf.spark.cassandra.sink.CassandraSourceProvider")
-//      .format("cassandra-streaming")
-//      .option("checkpointLocation", "/tmp/demo-checkpoint")
-//      .option("keyspace", "my_keyspace")
-//      .option("table", "my_table")
-//      .queryName("socket-cassandra-streaming")
-//      .start()
-//
-//    query.awaitTermination()
-//  }
-//}

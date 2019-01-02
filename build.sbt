@@ -3,7 +3,10 @@ organization := "com.github.bdoepf"
 
 scalaVersion := "2.11.12"
 
-val sparkVersion = "2.3.2"
+// Spark 2.4+ also support scala 2.12,
+// Unfortunately right now com.datastax.spark:spark-cassandra-connector is only available in 2.11
+// crossScalaVersions := List("2.12.8", "2.11.12")
+val sparkVersion = "2.4.0"
 
 // Pinning the artifact's version to spark's version
 version := sparkVersion

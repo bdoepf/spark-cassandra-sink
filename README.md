@@ -11,7 +11,8 @@ Add the library in the `build.sbt`:
 ```scala
 libraryDependencies += "com.github.bdoepf" %% "spark-cassandra-sink" % "2.4.0"
 ```
-The version should be the same like the spark version used.
+The version should be the same like the spark version used. 
+Only Spark > 2.3.0 is supported. Please check [maven central](https://mvnrepository.com/artifact/com.github.bdoepf/spark-cassandra-sink) for available versions.
 
 Configuration
 -------------

@@ -6,18 +6,21 @@ import com.datastax.driver.core._
 import com.datastax.spark.connector.cql._
 import com.datastax.spark.connector.{CassandraRow, ColumnRef, SomeColumns}
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.v2.writer.{DataWriter, WriterCommitMessage}
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.spark.sql.types.StructType
+import org.slf4j.LoggerFactory
 
 case object CassandraStreamCommitMessage extends WriterCommitMessage
 
 
 class CassandraDataWriter(connector: CassandraConnector,
                           columns: IndexedSeq[ColumnRef],
-                          tableDef: TableDef)
-  extends DataWriter[Row] {
+                          tableDef: TableDef,
+                          schema: StructType)
+  extends DataWriter[InternalRow] {
   private val log = LoggerFactory.getLogger(this.getClass.getName)
-  log.info(s"Initializing ${this.getClass.getSimpleName}")
+  log.debug(s"Initializing ${this.getClass.getSimpleName}")
 
   private val keyspaceName: String = tableDef.keyspaceName
   private val tableName: String = tableDef.tableName
@@ -36,8 +39,8 @@ class CassandraDataWriter(connector: CassandraConnector,
     prepareStatement(insertTemplate, session, isIdempotent).setConsistencyLevel(consistencyLevel)
   }
 
-  override def write(record: Row): Unit = {
-    log.info(s"Writing row $record")
+  override def write(record: InternalRow): Unit = {
+    log.debug(s"Writing row $record")
     connector.withSessionDo { session =>
       val protocolVersion = session.getCluster.getConfiguration.getProtocolOptions.getProtocolVersion
       val stmt = prepareStatement(insertTemplate, session, isIdempotent).setConsistencyLevel(consistencyLevel)
@@ -48,7 +51,8 @@ class CassandraDataWriter(connector: CassandraConnector,
         protocolVersion = protocolVersion,
         ignoreNulls = false)
 
-      val boundStatement = boundStmtBuilder.bind(record)
+      val rowSeq = record.toSeq(schema)
+      val boundStatement = boundStmtBuilder.bind(Row.fromSeq(rowSeq))
       session.executeAsync(boundStatement)
     }
   }
